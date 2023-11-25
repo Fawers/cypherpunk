@@ -4,7 +4,7 @@ from typing import Protocol
 
 class StepCalculator(Protocol):
     def next(self, current_step: int) -> int:
-        return 0
+        raise NotImplementedError
 
 
 class NegatedStepper:
@@ -15,15 +15,13 @@ class NegatedStepper:
         # to future self:
         # considere negar o current_step
         # -next(-current_step)
-        return -self.__stepper.next(-current_step)
+        next_step = self.__stepper.next(current_step)
+        return -next_step
 
 
 class CaesarStepper:
-    def __init__(self, step: int):
-        self.__step = step
-
     def next(self, current_step: int) -> int:
-        return self.__step
+        return current_step
 
 
 class SeededStepper:
@@ -52,8 +50,8 @@ class ReverseBits:
         sweeper = 1
 
         while sweeper <= 0x80_00_00_00:
-            new_step |= bool(sweeper & current_step)
             new_step <<= 1
+            new_step |= bool(sweeper & current_step)
             sweeper <<= 1
 
         return new_step
@@ -61,9 +59,47 @@ class ReverseBits:
 
 class XorHalfs:
     def next(self, current_step: int) -> int:
-        pass
+        raise NotImplementedError
 
 
 class ShiftBytes:
+    # 0x89ABCDEF
+    # 0xABCDEF89
+    # 0xCDEF89AB
+
+    def __init__(self, direction='<', bytes_to_shift=1):
+        self.direction = direction
+        self.bytes_to_shift = bytes_to_shift
+
     def next(self, current_step: int) -> int:
-        pass
+        match (self.direction, self.bytes_to_shift):
+            case ('<', 1):
+                stamp = 0xffffff
+                bits_to_shift = 8
+
+            case ('<', 2):
+                stamp = 0xffff
+                bits_to_shift = 16
+
+            case ('<', 3):
+                stamp = 0xff
+                bits_to_shift = 24
+
+            case ('>', 1):
+                stamp = 0xffffff00
+                bits_to_shift = 8
+
+            case ('>', 2):
+                stamp = 0xffff0000
+                bits_to_shift = 16
+
+            case ('>', 3):
+                stamp = 0xff000000
+                bits_to_shift = 32
+
+            case _:
+                raise TypeError()
+
+        left = current_step >> (32 - bits_to_shift)
+        right = (current_step & stamp) << bits_to_shift
+        return left | right

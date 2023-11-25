@@ -5,20 +5,16 @@ from cypherpunk import step_calculator as sc
 
 
 def main():
-    cypher = Cypherpunk('hisnaelod')
-    magic_value = 13
-    stepper = lambda: sc.ReverseBits()
+    cypher = Cypherpunk(string.ascii_lowercase + ' ')
+    stepper = lambda: sc.SeededStepper(1992)
+    # rotate13 rot13
 
-    cyphered = cypher.forth(
-        'hello', magic_value, stepper())
-    print(cyphered)
+    original = 'aaabbc'
+    encrypted = cypher.forth(original, 13, stepper())
+    decrypted = cypher.back(encrypted, 13, stepper())
 
-    original = cypher.back(
-        cyphered, magic_value, stepper())
-    print(original)
-
-    assert original == 'hello'
-
+    print(f"{original=}, {encrypted=}")
+    print(f"{decrypted=}, {original == decrypted = }")
 
 if __name__ == '__main__':
     main()
