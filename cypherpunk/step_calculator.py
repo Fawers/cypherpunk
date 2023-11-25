@@ -1,3 +1,4 @@
+from enum import IntFlag
 from random import Random
 from typing import Protocol
 
@@ -12,10 +13,7 @@ class NegatedStepper:
         self.__stepper = stepper
 
     def next(self, current_step: int) -> int:
-        # to future self:
-        # considere negar o current_step
-        # -next(-current_step)
-        next_step = self.__stepper.next(current_step)
+        next_step = self.__stepper.next(-current_step)
         return -next_step
 
 
@@ -62,44 +60,48 @@ class XorHalfs:
         raise NotImplementedError
 
 
-class ShiftBytes:
-    # 0x89ABCDEF
-    # 0xABCDEF89
-    # 0xCDEF89AB
 
-    def __init__(self, direction='<', bytes_to_shift=1):
-        self.direction = direction
-        self.bytes_to_shift = bytes_to_shift
+class ShiftBitsDirection(IntFlag):
+    LEFT  = 0b10
+    RIGHT = 0b01
+
+
+class ShiftBits:
+    # 0xDEADBEEF
+    # < 1 | > 3
+    # 0xADBEEFDE
+    # < 2 | > 2
+    # 0xBEEFDEAD
+    # < 3 | > 1
+
+    def __init__(self, num_bytes=4,
+                 direction=ShiftBitsDirection.LEFT, bits_to_shift=8):
+        self.num_bits = num_bytes * 8
+        self.bits_to_shift = bits_to_shift
+
+        # se o número de bits pra shiftar for maior
+        # do que o número de bytes, deve dar erro
+        # mesma coisa se for menor do que 0
+        if not (0 < self.bits_to_shift < self.num_bits):
+            raise ValueError("bits_to_shift precisa ser menor que o número "
+                             "de bits. " f"{bits_to_shift=}, {num_bytes*8=}")
+
+        if direction not in ('<', '>'):
+            raise ValueError('direction está errada')
+
+        # inverte bits_to_shift se
+        # direction == '>'
+        if direction == '>':
+            self.bits_to_shift = self.num_bits - bits_to_shift
 
     def next(self, current_step: int) -> int:
-        match (self.direction, self.bytes_to_shift):
-            case ('<', 1):
-                stamp = 0xffffff
-                bits_to_shift = 8
+        bits_to_shift = self.bits_to_shift
 
-            case ('<', 2):
-                stamp = 0xffff
-                bits_to_shift = 16
+        # abaixo leva em consideração
+        # direction == '<'
+        left = current_step << bits_to_shift
+        left &= 0xffffffff
 
-            case ('<', 3):
-                stamp = 0xff
-                bits_to_shift = 24
+        right = current_step >> (32 - bits_to_shift)
 
-            case ('>', 1):
-                stamp = 0xffffff00
-                bits_to_shift = 8
-
-            case ('>', 2):
-                stamp = 0xffff0000
-                bits_to_shift = 16
-
-            case ('>', 3):
-                stamp = 0xff000000
-                bits_to_shift = 32
-
-            case _:
-                raise TypeError()
-
-        left = current_step >> (32 - bits_to_shift)
-        right = (current_step & stamp) << bits_to_shift
         return left | right
