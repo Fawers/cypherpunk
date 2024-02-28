@@ -6,7 +6,7 @@ from cypherpunk import step_calculator as sc
 # TODO fazer o fawcrypt, que vai cuidar de
 #      cifrar e decifrar um arquivo.
 
-# TODO pacote cypherpunk
+# TODO pacote cypherpunk no pypi
 
 def main():
     cypher = Cypherpunk(string.ascii_lowercase + ' ')

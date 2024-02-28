@@ -22,7 +22,7 @@ class TestReverseBits(unittest.TestCase):
         for (a, b) in zip(input_step, expected):
             with self.subTest(input_step=a, expected=b):
                 output = stepper.next(a)
-                self.assertEqual(output, second=b)
+                self.assertEqual(output, b)
 
 class TestShiftBits(unittest.TestCase):
     def test_shift_deadbeef_to_adbeefde(self):

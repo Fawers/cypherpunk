@@ -1,4 +1,4 @@
-from enum import IntFlag
+from enum import Enum
 from random import Random
 from typing import Protocol
 
@@ -60,10 +60,9 @@ class XorHalfs:
         raise NotImplementedError
 
 
-
-class ShiftBitsDirection(IntFlag):
-    LEFT  = 0b10
-    RIGHT = 0b01
+class ShiftBitsDirection(Enum):
+    LEFT = 0
+    RIGHT = 1
 
 
 class ShiftBits:
@@ -78,30 +77,26 @@ class ShiftBits:
                  direction=ShiftBitsDirection.LEFT, bits_to_shift=8):
         self.num_bits = num_bytes * 8
         self.bits_to_shift = bits_to_shift
+        self.stamp = (1 << self.num_bits) - 1
 
         # se o número de bits pra shiftar for maior
         # do que o número de bytes, deve dar erro
-        # mesma coisa se for menor do que 0
+        # mesma coisa se for menor ou igual a 0
         if not (0 < self.bits_to_shift < self.num_bits):
             raise ValueError("bits_to_shift precisa ser menor que o número "
                              "de bits. " f"{bits_to_shift=}, {num_bytes*8=}")
 
-        if direction not in ('<', '>'):
-            raise ValueError('direction está errada')
-
         # inverte bits_to_shift se
         # direction == '>'
-        if direction == '>':
+        if direction == ShiftBitsDirection.RIGHT:
             self.bits_to_shift = self.num_bits - bits_to_shift
 
     def next(self, current_step: int) -> int:
-        bits_to_shift = self.bits_to_shift
-
         # abaixo leva em consideração
         # direction == '<'
-        left = current_step << bits_to_shift
-        left &= 0xffffffff
+        left = current_step << self.bits_to_shift
+        left &= self.stamp
 
-        right = current_step >> (32 - bits_to_shift)
+        right = current_step >> (self.num_bits - self.bits_to_shift)
 
         return left | right
